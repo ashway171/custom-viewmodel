@@ -8,7 +8,6 @@ import com.ateeb.mockviewmodel.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
-    // IMPROVEMENT: Now using dedicated ViewModel class
     private lateinit var viewModel: DemoViewModel
 
     private val TAG = "MainActivity"
@@ -19,48 +18,50 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         /**
-         * STILL THE PROBLEM: Creating new ViewModel instance every onCreate()
+         * THE FIX: Get ViewModel from Application storage instead of creating new
          *
-         * WHAT HAPPENS:
-         * - First launch: New ViewModel created
-         * - After rotation: NEW ViewModel created (different hashCode)
-         * - State lost because we get a fresh ViewModel instance
-         *
-         * IMPROVEMENT: Code is now organized, but same fundamental issue
+         * EVERYTHING HAPPENS HERE:
+         * - First launch: Application creates new ViewModel, stores it with key
+         * - After rotation: Application returns SAME ViewModel instance
+         * - State preserved across Activity recreation!
          */
-        viewModel = DemoViewModel()
-        Log.d(TAG, "onCreate: Created ViewModel: $viewModel")
+        viewModel = (application as MainApplication).saveOrGetViewModel("MainActivity")
+        Log.d(TAG, "onCreate: Retrieved ViewModel: $viewModel")
 
-        // Display count from ViewModel (still resets to 0 on rotation)
+        /**
+         * STATE RESTORATION: Now displays preserved count!
+         *
+         * Before: Always showed 0 after rotation
+         * After: Shows actual count value preserved from before rotation
+         */
         binding.counterTv.text = viewModel.count.toString()
+        Log.d(TAG, "onCreate: Displaying preserved count: ${viewModel.count}")
 
         binding.incrementBtn.setOnClickListener {
-            // State management now properly in ViewModel
             viewModel.count++
             binding.counterTv.text = viewModel.count.toString()
-            Log.d(TAG, "ViewModel count: ${viewModel.count}")
+            Log.d(TAG, "Count incremented: ${viewModel.count}")
         }
     }
 }
-
 /**
- * TESTING RESULTS:
+ * TESTING RESULTS - SUCCESS!
  *
- * BEHAVIOR: Still loses state on rotation (same problem as before)
- *
- * LOGS SHOW:
- * 1. First launch: ViewModel created with hashCode X
+ * ROTATION TEST:
+ * 1. Launch app: Application.onCreate() -> MainActivity.onCreate()
  * 2. Increment counter to 5
  * 3. Rotate screen:
- *    - onCreate called again
- *    - NEW ViewModel created with different hashCode Y
- *    - Count back to 0
+ *    - MainActivity destroyed and recreated
+ *    - SAME ViewModel instance retrieved (same hashCode!)
+ *    - Count still shows 5! STATE PRESERVED!
  *
- * PROGRESS: Better code organization (Can decouple states and business logic)
- * REMAINING ISSUE: ViewModel instance doesn't survive Activity recreation
+ * LOG EVIDENCE:
+ * Before rotation: DemoViewModel(count=5, hashCode=12345)
+ * After rotation:  DemoViewModel(count=5, hashCode=12345) <- SAME INSTANCE!
  *
- * NEXT CHALLENGE: Where can we store the ViewModel instance so it survives
- * Activity recreation but still gets cleaned up appropriately?
+ * NEW PROBLEM:
+ * ViewModels now accumulate in Application storage forever!
+ * Memory leak potential - when should we clean them up?
  *
- * INSIGHT NEEDED: We need external storage that has the right lifecycle!
+ * NEXT CHALLENGE: Detect when Activity is permanently destroyed vs temporarily destroyed
  */

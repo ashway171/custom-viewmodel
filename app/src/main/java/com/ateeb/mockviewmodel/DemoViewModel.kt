@@ -1,25 +1,15 @@
 package com.ateeb.mockviewmodel
 
 /**
- * THOUGHT PROCESS: Separate state management from Activity
- * GOAL: Move state into dedicated class for better organization and state mgmt
- *
- * CURRENT LIMITATION: Still creating new ViewModel in onCreate()
- * RESULT: Still loses state on rotation, but code is better structured
- */
-
-/**
- * CUSTOM VIEWMODEL: Simple state holder class
- *
- * DESIGN DECISIONS:
- * - Keep it minimal - just hold the state we need
- * - Public properties for direct access (focusing on structure, not encapsulation)
- * - Add toString() for debugging instance identity
- *
- * WHAT'S MISSING: Persistence mechanism!
- */
+* BREAKTHROUGH INSIGHT: Application class survives configuration changes!
+*
+* APPLICATION LIFECYCLE vs ACTIVITY LIFECYCLE:
+* Activity: Create -> Destroy -> Create -> Destroy (on rotation)
+* Application: Create -> (stays alive throughout) -> Process death
+*
+* SOLUTION: Store ViewModel instances in Application class
+*/
 class DemoViewModel {
-
     /**
      * STATE: Simple counter value
      *
@@ -37,5 +27,4 @@ class DemoViewModel {
     override fun toString(): String {
         return "DemoViewModel(count=$count, hashCode=${hashCode()})"
     }
-
 }
