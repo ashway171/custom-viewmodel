@@ -3,22 +3,12 @@ package com.ateeb.mockviewmodel
 import android.app.Application
 import android.util.Log
 
-/**
- * OUR APPLICATION: ViewModel storage manager
- *
- * WHY APPLICATION CLASS?
- * 1. Created once per app process
- * 2. Survives ALL configuration changes
- * 3. Accessible from any Activity via getApplication()
- * 4. Perfect lifecycle for ViewModel storage
- */
+
 class MainApplication : Application() {
     /**
-     * STORAGE MECHANISM: HashMap with String keys
+     * VIEWMODEL STORAGE: Application-scoped HashMap
      *
-     * DESIGN CHOICES:
-     * - HashMap since we want to store one viewmodel instance of DemoViewModel per activity
-     * - String keys for uniqueness factor (Activity name, custom identifiers)
+     * This is our version of ViewModelStore
      */
     private val viewModelMap = hashMapOf<String, DemoViewModel>()
 
@@ -29,15 +19,9 @@ class MainApplication : Application() {
     }
 
     /**
-     * CORE METHOD: Retrieve or create ViewModel instance (if it already exists)
+     * INSTANCE MANAGEMENT: Get or create ViewModel
      *
-     * THIS IS THE CRUX! Replicates ViewModelProvider.get() behavior:
-     * 1. Look for existing instance by key
-     * 2. If found: return it (state preserved!)
-     * 3. If not found: create new one and store it
-     *
-     * @param key Unique identifier for ViewModel
-     * @return ViewModel instance (existing or newly created)
+     * Our implementation of ViewModelProvider.get() logic
      */
     fun saveOrGetViewModel(key: String): DemoViewModel {
         Log.d("DemoApplication", "saveOrGetViewModel called with key: '$key'")
@@ -54,5 +38,27 @@ class MainApplication : Application() {
             Log.d("DemoApplication", "Created and stored new ViewModel: $newViewModel")
             newViewModel
         }
+    }
+
+    /**
+     * CLEANUP: Remove ViewModel when Activity permanently destroyed
+     *
+     * CRITICAL: Only call this for permanent destruction!
+     * NOT for configuration changes!
+     *
+     * This prevents memory leaks by cleaning up unused ViewModels
+     */
+    fun permanentDestruction(key: String) {
+        Log.d("DemoApplication", "permanentDestruction: key='$key'")
+
+        val removedViewModel = viewModelMap.remove(key)
+        if (removedViewModel != null) {
+            Log.d("DemoApplication", "Cleaning up ViewModel: $removedViewModel")
+            removedViewModel.onCleared()
+        } else {
+            Log.w("DemoApplication", "No ViewModel found for key: '$key'")
+        }
+
+        Log.d("DemoApplication", "Remaining ViewModels: ${viewModelMap.keys}")
     }
 }

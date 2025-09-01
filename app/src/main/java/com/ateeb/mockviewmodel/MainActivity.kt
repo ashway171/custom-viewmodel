@@ -18,18 +18,14 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         /**
-         * THE FIX: Get ViewModel from Application storage instead of creating new
-         *
-         * EVERYTHING HAPPENS HERE:
-         * - First launch: Application creates new ViewModel, stores it with key
-         * - After rotation: Application returns SAME ViewModel instance
-         * - State preserved across Activity recreation!
+         * FIXED: Using Application storage for ViewModel persistence
+         * State now survives rotation
          */
         viewModel = (application as MainApplication).saveOrGetViewModel("MainActivity")
         Log.d(TAG, "onCreate: Retrieved ViewModel: $viewModel")
 
         /**
-         * STATE RESTORATION: Now displays preserved count!
+         * STATE RESTORATION: displays preserved count!
          *
          * Before: Always showed 0 after rotation
          * After: Shows actual count value preserved from before rotation
@@ -42,26 +38,91 @@ class MainActivity : AppCompatActivity() {
             binding.counterTv.text = viewModel.count.toString()
             Log.d(TAG, "Count incremented: ${viewModel.count}")
         }
+
+        // Permanent Destruction of activity
+        finishMainActivity()
+    }
+    /**
+     * Usually RAM stores the instance of the last activity on the backstack
+     * Thus not calling onDestroy() and just onPause() and onStop()
+     *
+     * Here, when the back button is pressed from the MainActivity,
+     * it may restore the counter since onDestroy() was NEVER CALLED
+     *
+     * So we will explicitly finish() the MainActivity to register permanent destruction
+     */
+    private fun finishMainActivity(){
+        binding.permanentDestroyBtn.setOnClickListener{
+            finish()
+        }
+    }
+
+    /**
+     * LIFECYCLE MANAGEMENT: The critical cleanup decision
+     *
+     * KEY INSIGHT: isChangingConfigurations flag
+     *
+     * Android sets this flag to tell us WHY onDestroy() was called:
+     *
+     * isChangingConfigurations = true:
+     * - Screen rotation, language change, dark mode toggle, etc.
+     * - Activity will be recreated immediately
+     * - We WANT to keep ViewModel alive for the new Activity instance
+     *
+     * isChangingConfigurations = false:
+     * - Back button pressed, finish() called, system kill
+     * - Activity will NOT be recreated
+     * - We SHOULD clean up ViewModel to prevent memory leak
+     */
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "onDestroy: isChangingConfigurations = $isChangingConfigurations")
+
+        if (!isChangingConfigurations) {
+            /**
+             * PERMANENT DESTRUCTION: Clean up ViewModel
+             *
+             * SCENARIOS:
+             * - User pressed back button
+             * - finish() called programmatically
+             * - System permanently killed Activity
+             *
+             * ACTION: Tell Application to remove ViewModel from storage
+             */
+            Log.d(TAG, "onDestroy: Activity finishing permanently - cleaning up ViewModel")
+            (application as MainApplication).permanentDestruction("MainActivity")
+        } else {
+            /**
+             * TEMPORARY DESTRUCTION: Keep ViewModel alive
+             *
+             * SCENARIOS:
+             * - Screen rotation
+             * - Configuration changes
+             *
+             * ACTION: Do nothing - let ViewModel stay in Application storage
+             */
+            Log.d(TAG, "onDestroy: Configuration change - keeping ViewModel alive")
+        }
     }
 }
+
 /**
- * TESTING RESULTS - SUCCESS!
+ * COMPLETE SOLUTION TESTING:
  *
- * ROTATION TEST:
- * 1. Launch app: Application.onCreate() -> MainActivity.onCreate()
- * 2. Increment counter to 5
- * 3. Rotate screen:
- *    - MainActivity destroyed and recreated
- *    - SAME ViewModel instance retrieved (same hashCode!)
- *    - Count still shows 5! STATE PRESERVED!
+ * TEST 1 - Configuration Change (SUCCESS):
+ * 1. Launch app, increment to 5
+ * 2. Rotate screen
+ * 3. RESULT: Count still shows 5! Same ViewModel instance
+ * 4. LOGS: isChangingConfigurations = true, ViewModel kept alive
  *
- * LOG EVIDENCE:
- * Before rotation: DemoViewModel(count=5, hashCode=12345)
- * After rotation:  DemoViewModel(count=5, hashCode=12345) <- SAME INSTANCE!
+ * TEST 2 - Permanent Destruction (SUCCESS):
+ * 1. Launch app, increment to 3
+ * 2. Press back button
+ * 3. RESULT: onCleared() called, ViewModel removed from storage
+ * 4. LOGS: isChangingConfigurations = false, ViewModel cleaned up
+ * 5. Re-launch app: Fresh ViewModel created (count = 0)
  *
- * NEW PROBLEM:
- * ViewModels now accumulate in Application storage forever!
- * Memory leak potential - when should we clean them up?
+ * OUR CUSTOM VIEWMODEL NOW WORKS PRETTY-MUCH LIKE ANDROID'S OFFICIAL VIEWMODEL
  *
- * NEXT CHALLENGE: Detect when Activity is permanently destroyed vs temporarily destroyed
+ * NEXT ENHANCEMENT: Make it generic and production-ready
  */

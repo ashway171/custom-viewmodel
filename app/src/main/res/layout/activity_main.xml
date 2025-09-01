@@ -58,9 +58,24 @@
         android:textSize="16sp"
         android:layout_marginHorizontal="14dp"
         android:text="Increment"
-        android:layout_marginBottom="24dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="12dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/permanent_destroy_btn" />
+
+    <!-- Permanent Destruction Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/permanent_destroy_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:textSize="16sp"
+        android:layout_marginHorizontal="14dp"
+        android:text="Permanently Destroy Activity"
+        android:layout_marginBottom="24dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

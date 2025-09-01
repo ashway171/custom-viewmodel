@@ -1,14 +1,16 @@
 package com.ateeb.mockviewmodel
 
+import android.util.Log
+
 /**
-* BREAKTHROUGH INSIGHT: Application class survives configuration changes!
-*
-* APPLICATION LIFECYCLE vs ACTIVITY LIFECYCLE:
-* Activity: Create -> Destroy -> Create -> Destroy (on rotation)
-* Application: Create -> (stays alive throughout) -> Process death
-*
-* SOLUTION: Store ViewModel instances in Application class
-*/
+ * PROBLEM DISCOVERED: ViewModels accumulate in Application storage forever!
+ *
+ * NEW CHALLENGE: When should we clean up ViewModels?
+ * - NOT during configuration changes (we want to keep them)
+ * - YES when Activity is permanently destroyed (back button, finish())
+ *
+ * THE SOLUTION: isChangingConfigurations flag in onDestroy()
+ */
 class DemoViewModel {
     /**
      * STATE: Simple counter value
@@ -26,5 +28,16 @@ class DemoViewModel {
      */
     override fun toString(): String {
         return "DemoViewModel(count=$count, hashCode=${hashCode()})"
+    }
+
+    /**
+     * CLEANUP METHOD: Called when ViewModel is permanently destroyed
+     *
+     * This mimics Android ViewModel's onCleared() method
+     * Use this for cleanup: cancel coroutines, close resources, etc.
+     */
+    fun onCleared() {
+        Log.d("DemoViewModel", "onCleared: ViewModel destroyed, final count was $count")
+        // TODO: In real implementation - cancel jobs, close connections, etc.
     }
 }
