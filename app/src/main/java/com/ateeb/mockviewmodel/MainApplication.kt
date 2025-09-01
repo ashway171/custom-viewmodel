@@ -3,62 +3,97 @@ package com.ateeb.mockviewmodel
 import android.app.Application
 import android.util.Log
 
-
+/**
+ * ENHANCED APPLICATION: Generic ViewModel storage with type safety
+ */
 class MainApplication : Application() {
     /**
-     * VIEWMODEL STORAGE: Application-scoped HashMap
+     * GENERIC STORAGE: Can store any BaseViewModel type
      *
-     * This is our version of ViewModelStore
+     * VISIBILITY: Public because inline reified functions become part of public API
+     * and need access to this property when compiled into calling code
+     *
+     * For learning purposes: Public is fine since it's just our demo app
+     * In production: It's internal and uses non-inline methods
      */
-    private val viewModelMap = hashMapOf<String, DemoViewModel>()
+    val viewModelMap = hashMapOf<String, BaseViewModel>()
 
     override fun onCreate() {
         super.onCreate()
-        Log.d("DemoApplication", "Application onCreate - ViewModel storage ready")
-        Log.d("DemoApplication", "This should only be called ONCE per app launch")
+        Log.d("MainApplication", "Application created - Generic ViewModel storage ready")
     }
 
     /**
-     * INSTANCE MANAGEMENT: Get or create ViewModel
+     * SIMPLE METHOD: For ViewModels with empty constructors (like our DemoViewModel)
      *
-     * Our implementation of ViewModelProvider.get() logic
+     * USAGE: saveOrGetViewModel<DemoViewModel>("MainActivity")
+     *
+     * Uses reflection to create instance - requires empty constructor
      */
-    fun saveOrGetViewModel(key: String): DemoViewModel {
-        Log.d("DemoApplication", "saveOrGetViewModel called with key: '$key'")
+    inline fun <reified T : BaseViewModel> saveOrGetViewModel(key: String): T {
+        Log.d("MainApplication", "saveOrGetViewModel: key='$key', type=${T::class.java.simpleName}")
 
         return if (viewModelMap.containsKey(key)) {
-            // CONFIGURATION CHANGE SCENARIO: ViewModel already exists
-            val existingViewModel = viewModelMap[key]!!
-            Log.d("DemoApplication", "Found existing ViewModel: $existingViewModel")
+            // Return existing ViewModel with correct type
+            val existingViewModel = viewModelMap[key] as T
+            Log.d("MainApplication", "Returning existing: $existingViewModel")
             existingViewModel
         } else {
-            // FIRST CREATION SCENARIO: No ViewModel exists yet
-            val newViewModel = DemoViewModel()
+            // Create new ViewModel using reflection
+            val newViewModel = T::class.java.getDeclaredConstructor().newInstance()
             viewModelMap[key] = newViewModel
-            Log.d("DemoApplication", "Created and stored new ViewModel: $newViewModel")
+            Log.d("MainApplication", "Created new: $newViewModel")
             newViewModel
         }
     }
 
     /**
-     * CLEANUP: Remove ViewModel when Activity permanently destroyed
+     * FACTORY METHOD: For ViewModels that need constructor parameters
      *
-     * CRITICAL: Only call this for permanent destruction!
-     * NOT for configuration changes!
+     * USAGE: saveOrGetViewModel("profile") { UserProfileViewModel("userId123") }
      *
-     * This prevents memory leaks by cleaning up unused ViewModels
+     * @param T The ViewModel type to retrieve
+     * @param key Unique identifier
+     * @param factory Lambda to create new instance if needed
+     * @return Correctly typed ViewModel instance
+     */
+    inline fun <reified T : BaseViewModel> saveOrGetViewModel(
+        key: String,
+        factory: () -> T
+    ): T {
+        Log.d("MainApplication", "saveOrGetViewModel with factory: key='$key', type=${T::class.java.simpleName}")
+
+        return if (viewModelMap.containsKey(key)) {
+            // Return existing ViewModel
+            val existingViewModel = viewModelMap[key] as T
+            Log.d("MainApplication", "Returning existing: $existingViewModel")
+            existingViewModel
+        } else {
+            // Create new ViewModel using factory
+            val newViewModel = factory()
+            viewModelMap[key] = newViewModel
+            Log.d("MainApplication", "Created new: $newViewModel")
+            newViewModel
+        }
+    }
+
+    /**
+     * CLEANUP: Enhanced with proper error handling
      */
     fun permanentDestruction(key: String) {
-        Log.d("DemoApplication", "permanentDestruction: key='$key'")
+        Log.d("MainApplication", "permanentDestruction: key='$key'")
 
         val removedViewModel = viewModelMap.remove(key)
         if (removedViewModel != null) {
-            Log.d("DemoApplication", "Cleaning up ViewModel: $removedViewModel")
-            removedViewModel.onCleared()
-        } else {
-            Log.w("DemoApplication", "No ViewModel found for key: '$key'")
+            Log.d("MainApplication", "Cleaning up: $removedViewModel")
+
+            try {
+                removedViewModel.onCleared()
+            } catch (e: Exception) {
+                Log.e("MainApplication", "Error during ViewModel cleanup", e)
+            }
         }
 
-        Log.d("DemoApplication", "Remaining ViewModels: ${viewModelMap.keys}")
+        Log.d("MainApplication", "Remaining ViewModels: ${viewModelMap.keys}")
     }
 }

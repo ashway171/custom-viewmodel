@@ -18,10 +18,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         /**
-         * FIXED: Using Application storage for ViewModel persistence
-         * State now survives rotation
+         * ENHANCED RETRIEVAL: Using generic method
+         *
+         * Options:
+         * 1. With factory: saveOrGetViewModel("key") { DemoViewModel() }
+         * 2. Simple: saveOrGetViewModel<DemoViewModel>("key")
          */
-        viewModel = (application as MainApplication).saveOrGetViewModel("MainActivity")
+        viewModel = (application as MainApplication).saveOrGetViewModel<DemoViewModel>("MainActivity")
         Log.d(TAG, "onCreate: Retrieved ViewModel: $viewModel")
 
         /**
@@ -44,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     }
     /**
      * Usually RAM stores the instance of the last activity on the backstack
+     * When you press the back button that closes the app..
      * Thus not calling onDestroy() and just onPause() and onStop()
      *
      * Here, when the back button is pressed from the MainActivity,
@@ -109,20 +113,29 @@ class MainActivity : AppCompatActivity() {
 /**
  * COMPLETE SOLUTION TESTING:
  *
- * TEST 1 - Configuration Change (SUCCESS):
- * 1. Launch app, increment to 5
- * 2. Rotate screen
- * 3. RESULT: Count still shows 5! Same ViewModel instance
- * 4. LOGS: isChangingConfigurations = true, ViewModel kept alive
+ * TEST 1 - Configuration Changes:
+ * 1. Increment counter to 5
+ * 2. Rotate screen multiple times
+ * 3. RESULT: Count preserved through all rotations
+ * 4. LOGS: Same ViewModel hashCode, isChangingConfigurations = true
  *
- * TEST 2 - Permanent Destruction (SUCCESS):
- * 1. Launch app, increment to 3
+ * TEST 2 - Permanent Destruction:
+ * 1. Increment counter to 3
  * 2. Press back button
  * 3. RESULT: onCleared() called, ViewModel removed from storage
- * 4. LOGS: isChangingConfigurations = false, ViewModel cleaned up
- * 5. Re-launch app: Fresh ViewModel created (count = 0)
+ * 4. LOGS: isChangingConfigurations = false, cleanup performed
+ * 5. Re-launch: Fresh ViewModel created (count = 0)
  *
- * OUR CUSTOM VIEWMODEL NOW WORKS PRETTY-MUCH LIKE ANDROID'S OFFICIAL VIEWMODEL
+ * TEST 3 - Memory Management:
+ * 1. Multiple Activity launches and finishes
+ * 2. RESULT: No ViewModel accumulation in storage
+ * 3. LOGS: ViewModels properly cleaned up each time
  *
- * NEXT ENHANCEMENT: Make it generic and production-ready
+ * ACHIEVEMENT: Custom ViewModel that works like the real thing
+ *
+ * NEXT POSSIBLE ENHANCEMENTS:
+ * - Weak references for additional memory safety
+ * - Multiple ViewModel support per Activity (Tweaking the store key)
+ * - Integration with dependency injection
+ * - Coroutine scope management
  */
