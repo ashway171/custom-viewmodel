@@ -1,9 +1,11 @@
-package com.ateeb.mockviewmodel
+package com.ateeb.mockviewmodel.ui
 
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import com.ateeb.mockviewmodel.MainApplication
 import com.ateeb.mockviewmodel.databinding.ActivityMainBinding
+import com.ateeb.mockviewmodel.viewmodel.DemoViewModel
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding

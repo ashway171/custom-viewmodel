@@ -1,4 +1,4 @@
-package com.ateeb.mockviewmodel
+package com.ateeb.mockviewmodel.viewmodel
 
 /**
  * EVOLUTION: Make our ViewModel system reusable and type-safe

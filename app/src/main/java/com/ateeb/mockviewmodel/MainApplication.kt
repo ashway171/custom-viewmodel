@@ -2,6 +2,7 @@ package com.ateeb.mockviewmodel
 
 import android.app.Application
 import android.util.Log
+import com.ateeb.mockviewmodel.viewmodel.BaseViewModel
 
 /**
  * ENHANCED APPLICATION: Generic ViewModel storage with type safety

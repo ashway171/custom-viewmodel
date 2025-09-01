@@ -1,4 +1,4 @@
-package com.ateeb.mockviewmodel
+package com.ateeb.mockviewmodel.viewmodel
 
 import android.util.Log
 
